@@ -1,0 +1,161 @@
+context:
+  version: 2.2.0
+
+package:
+  name: tensorflow
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/tensorflow/tensorflow/archive/v{{ version }}.tar.gz
+  sha256: 69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3
+
+  patches:
+    #- patches/0001-add-rt-to-linkopts.patch                                     # [linux]
+    #- patches/0002-stable-image-rotate-test.patch                               # [linux]
+    - sel(linux): patches/0003-relax-tolerence-in-special_math_test.patch
+    - sel(linux): patches/0004-skip-read-only-debugger_cli_common-test.patch
+    #- patches/0005-fix-lookup_ops-test.patch                                    # [linux]
+    - sel(linux): patches/0006-relax-precision-in-matrix_log_op_test.patch
+    #- patches/0007-Add-init-symbol-names-prefixed-with-an-underscore.patch      # [osx]
+    #- patches/0008-Add-alternate-clock_gettime-implementation-for-macOS.patch   # [osx]
+    - sel(linux): patches/unbundle_llvm.patch
+
+build:
+  number: 0
+  skip:
+    - not linux
+
+
+outputs:
+  - package:
+      name: tensorflow-base
+    build:
+      script: build.sh
+    requirements:
+      # build requirements needs to pick up the compiler run_exports
+      build:
+        - sel(linux): '{{ compiler("c") }}'
+        - sel(linux): '{{ compiler("cxx") }}'
+      host:
+        # conda build requirements
+        - python
+        - pip
+        # requirements specified by the package itself
+        - absl-py >=0.1.6
+        - astor >=0.6.0
+        - astunparse
+        - gast >=0.2.0
+        - google-pasta
+        - h5py
+        - keras-preprocessing >=1.0.5
+        - numpy >=1.16.1
+        - six >=1.10.0
+        - protobuf >=3.6.1
+        - termcolor >=1.1.0
+        - grpcio >=1.8.6
+        - sel(unix): wheel >=0.26
+        - tensorflow-estimator >=2.2.0,<2.3.0a0
+        - swig
+        - sel(linux): zlib
+        - sel(linux): libpng
+        - sel(linux): libcurl
+      run:
+        - python
+        - absl-py >=0.1.6
+        - astor >=0.6.0
+        - astunparse
+        - gast >=0.2.0
+        - google-pasta
+        - h5py
+        - opt_einsum
+        - keras-preprocessing >=1.0.5
+        - '{{ pin_compatible("numpy") }}'
+        - scipy
+        - six >=1.10.0
+        - protobuf >=3.6.1
+        - termcolor >=1.1.0
+        - grpcio >=1.8.6
+        - tensorflow-estimator >=2.2.0,<2.3.0a0
+        - tensorboard >=2.2.0,<2.3.0a0
+    test:
+      imports:
+        - tensorflow
+      commands:
+        - freeze_graph --help
+        - saved_model_cli --help
+        - sel(not win): tflite_convert --help
+        - sel(not win): toco_from_protos --help
+        - sel(not win): toco --help
+
+  # - package:
+  #     name: libtensorflow
+  #   build:
+  #     script: cp_libtensorflow.sh
+  #   requirements:
+  #     # build requirements needs to pick up the compiler run_exports
+  #     build:
+  #       - sel(linux): '{{ compiler("c") }}'
+  #       - sel(linux): '{{ compiler("cxx") }}'
+  #     # host requirements to pick up run_exports
+  #     host:
+  #       - sel(linux): libcurl
+  #       - sel(linux): zlib
+
+  #   test:
+  #     files:
+  #       - test_c.c
+  #     requires:
+  #       - '{{ compiler("c") }}'
+  #     commands:
+  #       - sel(not win): test -f $PREFIX/lib/libtensorflow.so
+  #       - sel(not win): $CC -o test_c -L${PREFIX}/lib/ -ltensorflow -I${PREFIX}/include/ test_c.c && ./test_c
+
+  # - package:
+  #     name: libtensorflow_cc
+  #   build:
+  #     script: cp_libtensorflow_cc.sh
+  #   requirements:
+  #     # build requirements needs to pick up the compiler run_exports
+  #     build:
+  #       - sel(linux): '{{ compiler("c") }}'
+  #       - sel(linux): '{{ compiler("cxx") }}'
+  #     # host requirements to pick up run_exports
+  #     host:
+  #       - sel(linux): libcurl
+  #       - sel(linux): zlib
+  #     run:
+  #       - libprotobuf >=3.6.1,<3.7
+  #       - nsync
+  #   test:
+  #     files:
+  #       - test_cc.cc
+  #     requires:
+  #       - '{{ compiler("cxx") }}'
+  #     commands:
+  #       - sel(not win): test -f $PREFIX/lib/libtensorflow_cc.so
+  #       - sel(not win): $CXX -std=c++11 -o test_cc -L${PREFIX}/lib/ -ltensorflow_cc -ltensorflow_framework -lrt -I${PREFIX}/include/ test_cc.cc && ./test_cc
+
+about:
+  home: http://tensorflow.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: Apache
+  summary: TensorFlow is an open source machine learning framework for everyone.
+  description: |
+    TensorFlow provides multiple APIs.The lowest level API, TensorFlow Core
+    provides you with complete programming control.
+    Base package contains only tensorflow, not tensorflow-tensorboard.
+  dev_url: https://github.com/tensorflow/tensorflow
+  doc_url: https://www.tensorflow.org/get_started/get_started
+  doc_source_url: https://github.com/tensorflow/tensorflow/tree/master/tensorflow/docs_src
+
+extra:
+  recipe-maintainers:
+    - waitingkuo
+    - ghego
+    - hajapy
+    - gilbertfrancois
+    - farhantejani
+    - njzjz
+    - jschueller
+
